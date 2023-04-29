@@ -1,10 +1,16 @@
+import express from 'express';
 import { Telegraf } from 'telegraf';
 import { processCsv } from './utils.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
+const app = express();
+const port = process.env.PORT || 3000;
+const botToken = process.env.BOT_TOKEN;
+const webhookUrl = process.env.WEBHOOK_URL; // Publicly accessible URL for your server
+
+const bot = new Telegraf(botToken);
 
 bot.start((ctx) => ctx.reply('Welcome'));
 bot.help((ctx) => ctx.reply('Send me a sticker'));
@@ -12,14 +18,11 @@ bot.help((ctx) => ctx.reply('Send me a sticker'));
 bot.on('message', (msg) => {
   if (msg.message.document) {
     const document = msg.message.document;
-    // console.log('what is document', document);
     const mimeType = document.mime_type;
     const fileId = document.file_id;
 
     if (mimeType === 'text/csv') {
-      // we parse the csv file
       bot.telegram.getFileLink(fileId).then(async (link) => {
-        // console.log('what is link', link);
         const ledgerText = await processCsv(link.href);
         if (ledgerText) {
           bot.telegram.sendMessage(msg.chat.id, ledgerText);
@@ -31,9 +34,22 @@ bot.on('message', (msg) => {
   }
 });
 
-bot.launch();
-console.log('bot started');
+app.use(express.json()); // Parse incoming JSON payloads
 
-// Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+// Route to handle updates from the Telegram webhook
+app.post('/webhook', async (req, res) => {
+  try {
+    await bot.handleUpdate(req.body, res);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Express server listening at http://localhost:${port}`);
+});
+
+// Set up the webhook for the bot
+bot.telegram.setWebhook(`${webhookUrl}/webhook`).then(() => {
+  console.log('Webhook has been set');
+});
