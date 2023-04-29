@@ -13,7 +13,7 @@ const webhookUrl = process.env.WEBHOOK_URL; // Publicly accessible URL for your 
 const bot = new Telegraf(botToken);
 
 bot.start((ctx) => ctx.reply('Welcome'));
-bot.help((ctx) => ctx.reply('Send me a sticker'));
+bot.help((ctx) => ctx.reply('Send me a .csv file that is exported from pokernow.club'));
 
 bot.on('message', (msg) => {
   if (msg.message.document) {
@@ -25,7 +25,10 @@ bot.on('message', (msg) => {
       bot.telegram.getFileLink(fileId).then(async (link) => {
         const ledgerText = await processCsv(link.href);
         if (ledgerText) {
-          bot.telegram.sendMessage(msg.chat.id, ledgerText);
+          const sentMessage = await bot.telegram.sendMessage(msg.chat.id, ledgerText);
+          bot.telegram.pinChatMessage(msg.chat.id, sentMessage.message_id, {
+            disable_notification: true,
+          });
         } else {
           bot.telegram.sendMessage(msg.chat.id, 'CSV file could not be processed');
         }
