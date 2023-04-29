@@ -74,7 +74,6 @@ bot.action(/settled:(\d+)/, (ctx) => {
 bot.action(/delete:(\d+)/, (ctx) => {
   const senderId = parseInt(ctx.match[1]);
   const userId = ctx.from.id;
-
   if (senderId === userId) {
     // User who sent the CSV clicked the button
     const messageId = ctx.callbackQuery.message.message_id;
