@@ -2,6 +2,13 @@ import fetch from 'node-fetch';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import dayjs from 'dayjs';
+import { Markup } from 'telegraf';
+
+const inlineKeyboard = (senderId) =>
+  Markup.inlineKeyboard([
+    Markup.button.callback('Mark as Settled', `settled:${senderId}`),
+    Markup.button.callback('Delete', `delete:${senderId}`), // Add a delete button
+  ]).reply_markup;
 
 const processCsv = async (fileLink) => {
   try {
@@ -35,9 +42,9 @@ const processCsv = async (fileLink) => {
         })
         .on('end', () => {
           const resultArray = getMapToSortedArray(resultMap);
-          let ledgerText = `Today's Ledger: ${dayjs().format('DD MMM YYYY')} (Transfer to: ${
-            resultArray[0].player_nickname
-          })\n`;
+          let ledgerText = `Today's Ledger: ${dayjs().format(
+            'DD MMM YYYY',
+          )} (Transfer to: ${resultArray[0].player_nickname})\n`;
           resultArray.forEach(({ player_nickname, net }) => {
             ledgerText += `${player_nickname}: ${net}\n`;
           });
@@ -60,4 +67,4 @@ const getMapToSortedArray = (map) => {
   return sortedArray.sort((a, b) => b.net - a.net);
 };
 
-export { processCsv };
+export { inlineKeyboard, processCsv };
