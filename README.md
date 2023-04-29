@@ -8,7 +8,7 @@
 ## Poker Ledger Telegram Bot
 This open-source Telegram bot helps parse and sort poker ledgers from the [pokernow.club](https://www.pokernow.club/) app. It processes CSV ledger files sent to the bot, rearranges the ledger entries from winners to losers, and sends the sorted ledger back to the user.
 
-![Screenshot 2023-04-30 at 1 11 47 AM](https://user-images.githubusercontent.com/42372568/235315126-dcbe490e-9d90-4ea7-8f5c-eebb162d1a1f.png)
+![image](https://user-images.githubusercontent.com/42372568/235319151-e2803b5d-1251-49b2-bc69-b923c30d02b3.png)
 
 
 
