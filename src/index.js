@@ -1,6 +1,6 @@
 import express from 'express';
 import { Telegraf } from 'telegraf';
-import { processCsv } from './utils.js';
+import { processCsv, inlineKeyboard } from './utils.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -12,28 +12,77 @@ const webhookUrl = process.env.WEBHOOK_URL; // Publicly accessible URL for your 
 
 const bot = new Telegraf(botToken);
 
-bot.start((ctx) => ctx.reply('Welcome'));
-bot.help((ctx) => ctx.reply('Send me a .csv file that is exported from pokernow.club'));
+bot.start((ctx) =>
+  ctx.reply(
+    'Welcome, in order to get started, send me a .csv file that is exported from pokernow.club',
+  ),
+);
 
-bot.on('message', (msg) => {
-  if (msg.message.document) {
+// ON CSV SEND
+bot.on('message', async (msg) => {
+  if (msg.message.document && msg.message.document.mime_type === 'text/csv') {
+    const senderId = msg.from.id;
     const document = msg.message.document;
-    const mimeType = document.mime_type;
     const fileId = document.file_id;
-
-    if (mimeType === 'text/csv') {
-      bot.telegram.getFileLink(fileId).then(async (link) => {
-        const ledgerText = await processCsv(link.href);
-        if (ledgerText) {
-          const sentMessage = await bot.telegram.sendMessage(msg.chat.id, ledgerText);
-          bot.telegram.pinChatMessage(msg.chat.id, sentMessage.message_id, {
-            disable_notification: true,
-          });
-        } else {
-          bot.telegram.sendMessage(msg.chat.id, 'CSV file could not be processed');
-        }
+    const fileLink = await bot.telegram.getFileLink(fileId);
+    const ledgerText = await processCsv(fileLink.href);
+    if (ledgerText) {
+      const sentMessage = await bot.telegram.sendMessage(
+        msg.chat.id,
+        ledgerText,
+        {
+          reply_markup: inlineKeyboard(senderId),
+        },
+      );
+      bot.telegram.pinChatMessage(msg.chat.id, sentMessage.message_id, {
+        disable_notification: true,
       });
+    } else {
+      bot.telegram.sendMessage(msg.chat.id, 'CSV file could not be processed');
     }
+  }
+});
+
+bot.action(/settled:(\d+)/, (ctx) => {
+  const senderId = parseInt(ctx.match[1]);
+  const userId = ctx.from.id;
+
+  if (senderId === userId) {
+    const messageId = ctx.callbackQuery.message.message_id;
+    const chatId = ctx.callbackQuery.message.chat.id;
+    const originalText = ctx.callbackQuery.message.text;
+
+    // Edit the message to include "Ledger Settled" and strike through the old text
+    ctx.telegram.editMessageText(
+      chatId,
+      messageId,
+      null,
+      `<b>Ledger Settled</b>\n<s>${originalText}</s>`,
+      {
+        parse_mode: 'HTML',
+      },
+    );
+    // Send an answer to the callback query
+    ctx.answerCbQuery('Ledger marked as settled.');
+  } else {
+    // Another user clicked the button
+    ctx.answerCbQuery('Only the user who sent the CSV can mark it as settled.');
+  }
+});
+
+bot.action(/delete:(\d+)/, (ctx) => {
+  const senderId = parseInt(ctx.match[1]);
+  const userId = ctx.from.id;
+
+  if (senderId === userId) {
+    // User who sent the CSV clicked the button
+    const messageId = ctx.callbackQuery.message.message_id;
+    const chatId = ctx.callbackQuery.message.chat.id;
+    ctx.telegram.deleteMessage(chatId, messageId);
+    ctx.answerCbQuery('Message deleted.');
+  } else {
+    // Another user clicked the button
+    ctx.answerCbQuery('Only the user who sent the CSV can delete the message.');
   }
 });
 
