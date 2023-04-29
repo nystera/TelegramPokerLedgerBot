@@ -1,17 +1,16 @@
-import express from 'express';
 import { Telegraf } from 'telegraf';
 import { processCsv, inlineKeyboard } from './utils.js';
-
 import dotenv from 'dotenv';
-dotenv.config();
+import process from 'process';
 
-const app = express();
+dotenv.config();
+// const app = express();
 const port = process.env.PORT || 3000;
 const botToken = process.env.BOT_TOKEN;
 const webhookUrl = process.env.WEBHOOK_URL; // Publicly accessible URL for your server
-
 const bot = new Telegraf(botToken);
 
+// ON /start
 bot.start((ctx) =>
   ctx.reply(
     'Welcome, in order to get started, send me a .csv file that is exported from pokernow.club',
@@ -43,6 +42,7 @@ bot.on('message', async (msg) => {
   }
 });
 
+// WHEN SETTLED BUTTON IS CLICKED
 bot.action(/settled:(\d+)/, (ctx) => {
   const senderId = parseInt(ctx.match[1]);
   const userId = ctx.from.id;
@@ -70,6 +70,7 @@ bot.action(/settled:(\d+)/, (ctx) => {
   }
 });
 
+// WHEN DELETE BUTTON IS CLICKED
 bot.action(/delete:(\d+)/, (ctx) => {
   const senderId = parseInt(ctx.match[1]);
   const userId = ctx.from.id;
@@ -86,22 +87,15 @@ bot.action(/delete:(\d+)/, (ctx) => {
   }
 });
 
-app.use(express.json()); // Parse incoming JSON payloads
-
-// Route to handle updates from the Telegram webhook
-app.post('/webhook', async (req, res) => {
-  try {
-    await bot.handleUpdate(req.body, res);
-  } catch (err) {
-    console.error(err);
-  }
+// Launch bot
+bot.launch({
+  webhook: {
+    domain: webhookUrl,
+    port: port,
+  },
 });
+console.log('bot has been launched');
 
-app.listen(port, () => {
-  console.log(`Express server listening at http://localhost:${port}`);
-});
-
-// Set up the webhook for the bot
-bot.telegram.setWebhook(`${webhookUrl}/webhook`).then(() => {
-  console.log('Webhook has been set');
-});
+// Enable graceful stop
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
