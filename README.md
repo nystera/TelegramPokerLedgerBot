@@ -4,15 +4,15 @@
 3. [Features](https://github.com/nystera/TelegramPokerLedgerBot#features) 
 4. [Future development plans](https://github.com/nystera/TelegramPokerLedgerBot#future-development-plans)
 
-## Poker Ledger Telegram Bot
 
+## Poker Ledger Telegram Bot
 This open-source Telegram bot helps parse and sort poker ledgers from the [pokernow.club](https://www.pokernow.club/) app. It processes CSV ledger files sent to the bot, rearranges the ledger entries from winners to losers, and sends the sorted ledger back to the user.
 
 ![Screenshot 2023-04-30 at 1 11 47 AM](https://user-images.githubusercontent.com/42372568/235315126-dcbe490e-9d90-4ea7-8f5c-eebb162d1a1f.png)
 
 
-## Requirements for local testing
 
+## Requirements for local testing
 To set up and test this project locally, follow these steps:
 
 1. Clone the repository and navigate to the project folder:
@@ -57,8 +57,12 @@ For local webhook testing, you can use a service like `ngrok` to create a public
 6. When chatting with the bot, you can do a quick health check by typing `/start` to the bot.
 If it replies, it is up and working. You can now send the `.csv` file for them to parse the ledger to you.
 
+
+
 ## Features
 WIP! Currently only able to send .csv file and bot will reply as a collated ledger
+
+
 
 ## Future Development Plans
 
@@ -74,4 +78,8 @@ Here are some planned features for future development:
 
 5. Update the ledger history only when it's settled.
 
-Contributions and suggestions are welcome!
+
+
+### Contributions and suggestions are welcome!
+
+Simply raise an issue or MR and I'll take a look into it (when I have the time xd)
