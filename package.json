@@ -1,0 +1,22 @@
+{
+  "name": "telegram-poker-ledger-bot",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "repository": "git@github.com:nystera/TelegramPokerLedgerBot.git",
+  "author": "Nathan Yeo <yeo.nathan@outlook.com>",
+  "license": "MIT",
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.1",
+    "telegraf": "^4.12.2"
+  },
+  "scripts": {
+    "start": "node index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.16.3"
+  },
+  "type": "module"
+}
