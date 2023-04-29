@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import process from 'process';
 
 dotenv.config();
-// const app = express();
 const port = process.env.PORT || 3000;
 const botToken = process.env.BOT_TOKEN;
 const webhookUrl = process.env.WEBHOOK_URL; // Publicly accessible URL for your server
@@ -12,7 +11,9 @@ const bot = new Telegraf(botToken);
 
 // ON /start
 bot.start((ctx) =>
-  ctx.reply('Welcome, in order to get started, send me a .csv file that is exported from pokernow.club'),
+  ctx.reply(
+    'Welcome, in order to get started, send me a .csv file that is exported from pokernow.club',
+  ),
 );
 
 // ON CSV SEND
@@ -24,9 +25,13 @@ bot.on('message', async (msg) => {
     const fileLink = await bot.telegram.getFileLink(fileId);
     const ledgerText = await processCsv(fileLink.href);
     if (ledgerText) {
-      const sentMessage = await bot.telegram.sendMessage(msg.chat.id, ledgerText, {
-        reply_markup: inlineKeyboard(senderId),
-      });
+      const sentMessage = await bot.telegram.sendMessage(
+        msg.chat.id,
+        ledgerText,
+        {
+          reply_markup: inlineKeyboard(senderId),
+        },
+      );
       bot.telegram.pinChatMessage(msg.chat.id, sentMessage.message_id, {
         disable_notification: true,
       });
@@ -47,9 +52,15 @@ bot.action(/settled:(\d+)/, (ctx) => {
     const originalText = ctx.callbackQuery.message.text;
 
     // Edit the message to include "Ledger Settled" and strike through the old text
-    ctx.telegram.editMessageText(chatId, messageId, null, `<b>Ledger Settled</b>\n<s>${originalText}</s>`, {
-      parse_mode: 'HTML',
-    });
+    ctx.telegram.editMessageText(
+      chatId,
+      messageId,
+      null,
+      `<b>Ledger Settled</b>\n<s>${originalText}</s>`,
+      {
+        parse_mode: 'HTML',
+      },
+    );
     // Send an answer to the callback query
     ctx.answerCbQuery('Ledger marked as settled.');
   } else {
