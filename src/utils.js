@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
+import dayjs from 'dayjs';
 
 const processCsv = async (fileLink) => {
   try {
@@ -34,7 +35,7 @@ const processCsv = async (fileLink) => {
         })
         .on('end', () => {
           const resultArray = getMapToSortedArray(resultMap);
-          let ledgerText = `Today's Ledger: ${getCurrentDateFormatted()} (Transfer to: ${
+          let ledgerText = `Today's Ledger: ${dayjs().format('DD MMM YYYY')} (Transfer to: ${
             resultArray[0].player_nickname
           })\n`;
           resultArray.forEach(({ player_nickname, net }) => {
@@ -50,17 +51,6 @@ const processCsv = async (fileLink) => {
     return undefined;
   }
 };
-
-function getCurrentDateFormatted() {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-  const date = new Date();
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-
-  return `${day} ${month} ${year}`;
-}
 
 const getMapToSortedArray = (map) => {
   const sortedArray = [];
