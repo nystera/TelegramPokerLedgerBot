@@ -5,10 +5,7 @@ import process from 'process';
 
 dotenv.config();
 const port = process.env.PORT || 3000;
-const isDevelopment = process.env.NODE_ENV === 'development';
-const botToken = isDevelopment
-  ? process.env.TEST_BOT_TOKEN
-  : process.env.BOT_TOKEN;
+const botToken = process.env.BOT_TOKEN;
 const webhookUrl = process.env.WEBHOOK_URL; // Publicly accessible URL for your server
 const bot = new Telegraf(botToken);
 
