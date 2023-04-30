@@ -14,9 +14,8 @@
     "telegraf": "^4.12.2"
   },
   "scripts": {
-    "build": "echo 'No build step'",
-    "start": "NODE_ENV=production node src/index.js",
-    "dev": "NODE_ENV=development nodemon src/index.js"
-    },
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
   "type": "module"
 }
