@@ -1,16 +1,20 @@
-import fetch from 'node-fetch';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import dayjs from 'dayjs';
 import { Markup } from 'telegraf';
 
-const inlineKeyboard = (senderId) =>
-  Markup.inlineKeyboard([
-    Markup.button.callback('Mark as Settled', `settled:${senderId}`),
+const ledgerInlineKeyboard = (senderId: number, isSettled?: boolean) => {
+  const settledButtonText = isSettled ? 'Undo Settled' : 'Mark as Settled';
+  const settledCallback = isSettled
+    ? `unsettle:${senderId}`
+    : `settle:${senderId}`;
+  return Markup.inlineKeyboard([
+    Markup.button.callback(settledButtonText, settledCallback),
     Markup.button.callback('Delete', `delete:${senderId}`), // Add a delete button
   ]).reply_markup;
+};
 
-const processCsv = async (fileLink) => {
+const processCsv = async (fileLink: string) => {
   try {
     const response = await fetch(fileLink);
     const fileArrayBuffer = await response.arrayBuffer();
@@ -52,14 +56,14 @@ const processCsv = async (fileLink) => {
         });
     });
     // Wait for the Promise to resolve before returning the ledgerText
-    return await ledgerTextPromise;
+    return (await ledgerTextPromise) as string;
   } catch (e) {
     console.error(e);
     return undefined;
   }
 };
 
-const getMapToSortedArray = (map) => {
+const getMapToSortedArray = (map: Map<string, string>) => {
   const sortedArray = [];
   for (const [key, value] of map) {
     sortedArray.push({ player_nickname: key, net: Number(value).toFixed(2) });
@@ -67,4 +71,4 @@ const getMapToSortedArray = (map) => {
   return sortedArray.sort((a, b) => b.net - a.net);
 };
 
-export { inlineKeyboard, processCsv };
+export { ledgerInlineKeyboard, processCsv };
