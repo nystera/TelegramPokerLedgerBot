@@ -9,13 +9,16 @@
     "csv-parser": "^3.0.0",
     "dayjs": "^1.11.7",
     "dotenv": "^16.0.3",
-    "node-fetch": "^3.3.1",
     "nodemon": "^2.0.22",
     "telegraf": "^4.12.2"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "start": "NODE_ENV=production ts-node src/index.ts",
+    "dev": "NODE_ENV=development nodemon"
   },
-  "type": "module"
+  "devDependencies": {
+    "@types/node": "^18.16.3",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
+  }
 }
