@@ -14,7 +14,17 @@ const ledgerInlineKeyboard = (senderId: number, isSettled?: boolean) => {
   ]).reply_markup;
 };
 
-const processCsv = async (fileLink: string) => {
+const centsOptionKeyboard = (chatId: number) => {
+  return Markup.inlineKeyboard([
+    Markup.button.callback(
+      'Use dollar value',
+      `initializeCents:${chatId}:false`,
+    ),
+    Markup.button.callback('Use cents value', `initializeCents:${chatId}:true`),
+  ]).reply_markup;
+};
+
+const getLedgerFromCsv = async (fileLink: string, isCents?: boolean) => {
   try {
     const response = await fetch(fileLink);
     const fileArrayBuffer = await response.arrayBuffer();
@@ -22,14 +32,14 @@ const processCsv = async (fileLink: string) => {
     const stream = Readable.from(fileBuffer);
 
     // Wrap the stream processing in a Promise
-    const ledgerTextPromise = new Promise((resolve) => {
-      const resultMap = new Map();
+    const ledgerPromise = new Promise((resolve) => {
+      const resultMap = new Map<string, number>();
       stream
         .pipe(csv())
         .on('data', (row) => {
           const { player_nickname, net } = row;
           // We divide the net by 100 as we use cents value
-          const netInt = parseInt(net) / 100;
+          const netInt = parseInt(net) / (isCents ? 100 : 1);
           if (netInt !== 0) {
             // if the player is already in the map
             // we add the net to the existing value
@@ -45,30 +55,42 @@ const processCsv = async (fileLink: string) => {
           }
         })
         .on('end', () => {
-          const resultArray = getMapToSortedArray(resultMap);
-          let ledgerText = `Today's Ledger: ${dayjs().format(
-            'DD MMM YYYY',
-          )} (Transfer to: ${resultArray[0].player_nickname})\n`;
-          resultArray.forEach(({ player_nickname, net }) => {
-            ledgerText += `${player_nickname}: ${net}\n`;
-          });
-          resolve(ledgerText); // Resolve the Promise with the ledgerText
+          resolve(resultMap); // Resolve the Promise with the ledger
         });
     });
-    // Wait for the Promise to resolve before returning the ledgerText
-    return (await ledgerTextPromise) as string;
+    // Wait for the Promise to resolve before returning the ledger
+    return (await ledgerPromise) as Map<string, number>;
   } catch (e) {
     console.error(e);
     return undefined;
   }
 };
 
-const getMapToSortedArray = (map: Map<string, string>) => {
+const constructLedgerText = (
+  resultMap: Map<string, number>,
+  isCents?: boolean,
+) => {
   const sortedArray = [];
-  for (const [key, value] of map) {
-    sortedArray.push({ player_nickname: key, net: Number(value).toFixed(2) });
+  for (const [key, value] of resultMap) {
+    sortedArray.push({
+      player_nickname: key,
+      net: isCents ? value.toFixed(2) : value,
+    });
   }
-  return sortedArray.sort((a, b) => b.net - a.net);
+  sortedArray.sort((a, b) => b.net - a.net);
+
+  let ledgerText = `Today's Ledger: ${dayjs().format(
+    'DD MMM YYYY',
+  )} (Transfer to: ${sortedArray[0].player_nickname})\n`;
+  sortedArray.forEach(({ player_nickname, net }) => {
+    ledgerText += `${player_nickname}: ${net}\n`;
+  });
+  return ledgerText;
 };
 
-export { ledgerInlineKeyboard, processCsv };
+export {
+  ledgerInlineKeyboard,
+  centsOptionKeyboard,
+  getLedgerFromCsv,
+  constructLedgerText,
+};
