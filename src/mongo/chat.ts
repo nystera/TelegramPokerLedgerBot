@@ -25,4 +25,24 @@ const initializeChat = async (db: Db, chatId: number, isCents: boolean) => {
   }
 };
 
-export { getChat, initializeChat };
+const updateCentsValue = async (db: Db, chatId: number, isCents: boolean) => {
+  const chatCollection: Collection<Chat> = db.collection(CHAT_COLLECTION);
+  try {
+    await chatCollection.updateOne(
+      {
+        chatId,
+      },
+      {
+        $set: {
+          isCents,
+        },
+      },
+    );
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
+
+export { getChat, initializeChat, updateCentsValue };

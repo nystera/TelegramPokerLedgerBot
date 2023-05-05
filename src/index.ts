@@ -11,7 +11,7 @@ import process from 'process';
 import CALLBACK from './constants/callback';
 import { Message } from 'telegraf/typings/core/types/typegram';
 import { MongoClient } from 'mongodb';
-import { getChat, initializeChat } from './mongo/chat';
+import { getChat, initializeChat, updateCentsValue } from './mongo/chat';
 import commands from './constants/commands';
 import { POKERNOW_DB } from './constants/mongo';
 
@@ -27,6 +27,7 @@ const mongoClient = new MongoClient(process.env.MONGO_DB_CONNECTION_STRING!);
 
 async function main() {
   try {
+    // Help commands for users
     bot.telegram.setMyCommands(commands);
     // Connect to MongoDB
     await mongoClient.connect();
@@ -49,6 +50,21 @@ async function main() {
             reply_markup: centsOptionKeyboard(ctx.chat.id),
           },
         );
+      }
+    });
+
+    // ON /currency
+    bot.command(commands[1].command, async (ctx) => {
+      const chat = await getChat(db, ctx.chat.id);
+      if (chat) {
+        ctx.reply(
+          'Please indicate if future games will be using cents value.',
+          {
+            reply_markup: centsOptionKeyboard(ctx.chat.id),
+          },
+        );
+      } else {
+        ctx.reply('No chat saved. Please type /start to initialize.');
       }
     });
 
@@ -175,19 +191,31 @@ async function main() {
     bot.action(CALLBACK.INITIALIZE_CENTS, async (ctx) => {
       const chatId = ctx.chat.id;
       const isCentsValue = ctx.match[2] === 'true';
-      const isInitialized = await initializeChat(db, chatId, isCentsValue);
-      // check if insert was successful
-      if (isInitialized) {
-        // We also delete the message that asked the user if they are using cents
+      try {
+        // We check if the chat is already initialized
+        const chat = await getChat(db, chatId);
         const messageId = ctx.callbackQuery.message.message_id;
+        if (chat) {
+          // Update the chat
+          await updateCentsValue(db, chatId, isCentsValue);
+          ctx.reply(
+            'Successfully updated! Now send me a .csv file that is exported from pokernow.club',
+          );
+        } else {
+          // Initialize the chat
+          const isInitialized = await initializeChat(db, chatId, isCentsValue);
+          // check if insert was successful
+          if (isInitialized) {
+            // We also delete the message that asked the user if they are using cents
+            ctx.reply(
+              'Successfully initialized! Now send me a .csv file that is exported from pokernow.club',
+            );
+          }
+        }
         ctx.telegram.deleteMessage(chatId, messageId);
-        ctx.reply(
-          'Successfully initialized! Now send me a .csv file that is exported from pokernow.club',
-        );
-      } else {
-        ctx.reply(
-          'There was an error initializing the chat. Please try again later',
-        );
+      } catch (e) {
+        console.error(e);
+        ctx.reply('There was an error initializing the chat. Please try again');
       }
     });
 
