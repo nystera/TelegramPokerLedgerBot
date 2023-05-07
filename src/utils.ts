@@ -1,20 +1,9 @@
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import dayjs from 'dayjs';
-import { Markup } from 'telegraf';
+import crypto from 'crypto';
 
-const ledgerInlineKeyboard = (senderId: number, isSettled?: boolean) => {
-  const settledButtonText = isSettled ? 'Undo Settled' : 'Mark as Settled';
-  const settledCallback = isSettled
-    ? `unsettle:${senderId}`
-    : `settle:${senderId}`;
-  return Markup.inlineKeyboard([
-    Markup.button.callback(settledButtonText, settledCallback),
-    Markup.button.callback('Delete', `delete:${senderId}`), // Add a delete button
-  ]).reply_markup;
-};
-
-const processCsv = async (fileLink: string) => {
+const getLedgerFromCsv = async (fileLink: string, isCents?: boolean) => {
   try {
     const response = await fetch(fileLink);
     const fileArrayBuffer = await response.arrayBuffer();
@@ -22,14 +11,14 @@ const processCsv = async (fileLink: string) => {
     const stream = Readable.from(fileBuffer);
 
     // Wrap the stream processing in a Promise
-    const ledgerTextPromise = new Promise((resolve) => {
-      const resultMap = new Map();
+    const ledgerPromise = new Promise((resolve) => {
+      const resultMap = new Map<string, number>();
       stream
         .pipe(csv())
         .on('data', (row) => {
           const { player_nickname, net } = row;
           // We divide the net by 100 as we use cents value
-          const netInt = parseInt(net) / 100;
+          const netInt = parseInt(net) / (isCents ? 100 : 1);
           if (netInt !== 0) {
             // if the player is already in the map
             // we add the net to the existing value
@@ -45,30 +34,68 @@ const processCsv = async (fileLink: string) => {
           }
         })
         .on('end', () => {
-          const resultArray = getMapToSortedArray(resultMap);
-          let ledgerText = `Today's Ledger: ${dayjs().format(
-            'DD MMM YYYY',
-          )} (Transfer to: ${resultArray[0].player_nickname})\n`;
-          resultArray.forEach(({ player_nickname, net }) => {
-            ledgerText += `${player_nickname}: ${net}\n`;
-          });
-          resolve(ledgerText); // Resolve the Promise with the ledgerText
+          resolve(resultMap); // Resolve the Promise with the ledger
         });
     });
-    // Wait for the Promise to resolve before returning the ledgerText
-    return (await ledgerTextPromise) as string;
+    // Wait for the Promise to resolve before returning the ledger
+    return (await ledgerPromise) as Map<string, number>;
   } catch (e) {
     console.error(e);
     return undefined;
   }
 };
 
-const getMapToSortedArray = (map: Map<string, string>) => {
+const constructLedgerText = (
+  resultMap: Map<string, number>,
+  isCents?: boolean,
+) => {
   const sortedArray = [];
-  for (const [key, value] of map) {
-    sortedArray.push({ player_nickname: key, net: Number(value).toFixed(2) });
+  for (const [key, value] of resultMap) {
+    sortedArray.push({
+      player_nickname: key,
+      net: isCents ? value.toFixed(2) : value,
+    });
   }
-  return sortedArray.sort((a, b) => b.net - a.net);
+  sortedArray.sort((a, b) => b.net - a.net);
+  let ledgerText = `Today's Ledger: ${dayjs().format(
+    'DD MMM YYYY',
+  )} (Transfer to: ${sortedArray[0].player_nickname})\n`;
+  sortedArray.forEach(({ player_nickname, net }) => {
+    ledgerText += `${player_nickname}: ${net}\n`;
+  });
+  return ledgerText;
 };
 
-export { ledgerInlineKeyboard, processCsv };
+// We encrypt the phone number before storing it in the database
+function encryptPhoneNumber(text: string) {
+  const keyBuffer = Buffer.from(process.env.PHONE_NUMBER_KEY, 'hex');
+  const ivBuffer = Buffer.from(process.env.PHONE_NUMBER_IV, 'hex');
+  const cipher = crypto.createCipheriv(
+    process.env.PHONE_NUMBER_ALGORITHM,
+    keyBuffer,
+    ivBuffer,
+  );
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return encrypted.toString('hex');
+}
+
+function getPhoneNumber(encryptedText: string) {
+  const keyBuffer = Buffer.from(process.env.PHONE_NUMBER_KEY, 'hex');
+  const ivBuffer = Buffer.from(process.env.PHONE_NUMBER_IV, 'hex');
+  const decipher = crypto.createDecipheriv(
+    process.env.PHONE_NUMBER_ALGORITHM,
+    keyBuffer,
+    ivBuffer,
+  );
+  let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+export {
+  getLedgerFromCsv,
+  constructLedgerText,
+  encryptPhoneNumber,
+  getPhoneNumber,
+};

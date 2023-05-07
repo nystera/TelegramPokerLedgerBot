@@ -9,6 +9,7 @@
     "csv-parser": "^3.0.0",
     "dayjs": "^1.11.7",
     "dotenv": "^16.0.3",
+    "mongodb": "^5.3.0",
     "nodemon": "^2.0.22",
     "telegraf": "^4.12.2"
   },
