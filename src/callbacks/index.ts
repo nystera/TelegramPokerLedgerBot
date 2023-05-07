@@ -140,7 +140,7 @@ const callbackRegisterConfirm = (bot: Telegraf<Context<Update>>, db: Db) => {
         });
         ctx.telegram.sendMessage(
           userId,
-          'You have been successfully registered! If you want to add your phone number, please follow the steps for /phone. Note that your phone number will be encrpyted when storing it in the database.',
+          'You have been successfully registered! To start, you can do the following:\n- Add game names with the /addname command (this is to cumulate your winnings).\n- Add your phone number with the /phone command. Note that your phone number will be encrpyted when storing it in the database. (This is to direct people to pay)',
         );
       } else {
         ctx.telegram.sendMessage(userId, 'You are already registered!');

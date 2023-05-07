@@ -8,7 +8,7 @@ import {
   confirmRegisterKeyboard,
 } from '../keyboard';
 import { COMMAND_TRIGGERS } from './list';
-import { getUser } from '../mongo/user';
+import { addGameName, getUser, removeGameName } from '../mongo/user';
 import { getPhoneNumber } from '../utils';
 
 // ON /start
@@ -82,7 +82,9 @@ const handleMe = (bot: Telegraf<Context<Update>>, db: Db) => {
     }
     ctx.reply(
       `
-For @${ctx.from.username} (${getPhoneNumber(user.encrpytedNumber)}),
+For @${ctx.from.username}${
+        user.encrpytedNumber ? ` (${getPhoneNumber(user.encrpytedNumber)})` : ''
+      },
 Your net winnings from this group chat is: ${user.net}
 ${
   user.gameNames.length > 0
@@ -114,7 +116,9 @@ const handlePhone = (bot: Telegraf<Context<Update>>, db: Db) => {
     const userId = ctx.from.id;
     const chatId = ctx.chat.id;
     const user = await getUser(db, userId, chatId);
-    const phoneNumber = ctx.message.text.replace('/phone', '').trim();
+    const phoneNumber = ctx.message.text
+      .replace(`/${COMMAND_TRIGGERS.PHONE}`, '')
+      .trim();
     if (!user) {
       ctx.reply('No found user saved in this group. Please /register first.');
       return;
@@ -149,4 +153,77 @@ const handlePhone = (bot: Telegraf<Context<Update>>, db: Db) => {
   });
 };
 
-export { handleStart, handleRegister, handleMe, handleCurrency, handlePhone };
+const handleAddGameName = (bot: Telegraf<Context<Update>>, db: Db) => {
+  return bot.command(COMMAND_TRIGGERS.ADD_GAMENAME, async (ctx) => {
+    const userId = ctx.from.id;
+    const chatId = ctx.chat.id;
+    const user = await getUser(db, userId, chatId);
+    const gameName = ctx.message.text
+      .replace(`/${COMMAND_TRIGGERS.ADD_GAMENAME}`, '')
+      .trim();
+    if (!user) {
+      ctx.reply('No found user saved in this group. Please /register first.');
+      return;
+    }
+    // If user does not type with game name, we prompt them to add a game name
+    if (!gameName) {
+      ctx.telegram.sendMessage(
+        userId,
+        'To add a game name, please send me your game name in the format of /addname XYZ',
+      );
+      return;
+    }
+    // If user types with game name
+    await addGameName(db, userId, chatId, gameName);
+    ctx.telegram.sendMessage(
+      userId,
+      `Your game name ${gameName} has been added.`,
+    );
+  });
+};
+
+const handleRemoveGameName = (bot: Telegraf<Context<Update>>, db: Db) => {
+  return bot.command(COMMAND_TRIGGERS.REMOVE_GAMENAME, async (ctx) => {
+    const userId = ctx.from.id;
+    const chatId = ctx.chat.id;
+    const user = await getUser(db, userId, chatId);
+    const gameName = ctx.message.text
+      .replace(`/${COMMAND_TRIGGERS.REMOVE_GAMENAME}`, '')
+      .trim();
+    if (!user) {
+      ctx.reply('No found user saved in this group. Please /register first.');
+      return;
+    }
+    // If user does not type with game name, we prompt them to add a game name
+    if (!gameName) {
+      ctx.telegram.sendMessage(
+        userId,
+        'To remove a game name, please send me your game name in the format of /removename XYZ',
+      );
+      return;
+    }
+    // If user types with game name
+    const hasNameRemoved = await removeGameName(db, userId, chatId, gameName);
+    if (hasNameRemoved) {
+      ctx.telegram.sendMessage(
+        userId,
+        `Your game name ${gameName} has been removed.`,
+      );
+    } else {
+      ctx.telegram.sendMessage(
+        userId,
+        `You have not been registered as ${gameName}.`,
+      );
+    }
+  });
+};
+
+export {
+  handleStart,
+  handleRegister,
+  handleMe,
+  handleCurrency,
+  handlePhone,
+  handleAddGameName,
+  handleRemoveGameName,
+};

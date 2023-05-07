@@ -5,10 +5,12 @@ import { MongoClient } from 'mongodb';
 import { COMMAND_LIST } from './commands/list';
 import { POKERNOW_DB } from './mongo/cluster';
 import {
+  handleAddGameName,
   handleCurrency,
   handleMe,
   handlePhone,
   handleRegister,
+  handleRemoveGameName,
   handleStart,
 } from './commands';
 import { onCsvTrigger } from './triggers';
@@ -46,6 +48,8 @@ async function main() {
     handleCurrency(bot, db);
     handlePhone(bot, db);
     handleMe(bot, db);
+    handleAddGameName(bot, db);
+    handleRemoveGameName(bot, db);
 
     // TRIGGERS
     onCsvTrigger(bot, db);

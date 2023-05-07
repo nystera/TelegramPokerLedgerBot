@@ -4,7 +4,8 @@ export const COMMAND_TRIGGERS = {
   REGISTER: 'register',
   CURRENCY: 'currency',
   PHONE: 'phone',
-  ADD_GAMENAME: 'add_gamename',
+  ADD_GAMENAME: 'addname',
+  REMOVE_GAMENAME: 'removename',
 };
 
 export const COMMAND_LIST = [
@@ -27,6 +28,11 @@ export const COMMAND_LIST = [
   },
   {
     command: COMMAND_TRIGGERS.ADD_GAMENAME,
-    description: 'Add game names that you play with',
+    description:
+      'Add a game name that you play with, this is for cumulating net profits',
+  },
+  {
+    command: COMMAND_TRIGGERS.REMOVE_GAMENAME,
+    description: "Remove a game name that you don't play with anymore",
   },
 ];
