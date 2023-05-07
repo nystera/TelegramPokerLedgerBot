@@ -1,6 +1,6 @@
 import { Collection, Db } from 'mongodb';
 import { User } from '../types';
-import { USER_COLLECTION } from '../constants/mongo';
+import { USER_COLLECTION } from './cluster';
 import { encryptPhoneNumber } from '../utils';
 
 const getUser = async (db: Db, userId: number, chatId: number) => {

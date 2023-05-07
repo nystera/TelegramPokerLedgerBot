@@ -1,7 +1,7 @@
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import dayjs from 'dayjs';
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 const getLedgerFromCsv = async (fileLink: string, isCents?: boolean) => {
   try {
@@ -57,7 +57,6 @@ const constructLedgerText = (
     });
   }
   sortedArray.sort((a, b) => b.net - a.net);
-
   let ledgerText = `Today's Ledger: ${dayjs().format(
     'DD MMM YYYY',
   )} (Transfer to: ${sortedArray[0].player_nickname})\n`;
@@ -68,10 +67,6 @@ const constructLedgerText = (
 };
 
 // We encrypt the phone number before storing it in the database
-// const ALGO = process.env.PHONE_NUMBER_ALGORITHM;
-// const KEY = Buffer.from(process.env.PHONE_NUMBER_KEY, 'hex');
-// const IV = process.env.PHONE_NUMBER_IV;
-
 function encryptPhoneNumber(text: string) {
   const keyBuffer = Buffer.from(process.env.PHONE_NUMBER_KEY, 'hex');
   const ivBuffer = Buffer.from(process.env.PHONE_NUMBER_IV, 'hex');

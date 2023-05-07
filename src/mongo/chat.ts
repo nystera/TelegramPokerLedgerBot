@@ -1,6 +1,6 @@
 import { Collection, Db } from 'mongodb';
 import { Chat } from '../types';
-import { CHAT_COLLECTION } from '../constants/mongo';
+import { CHAT_COLLECTION } from './cluster';
 
 const getChat = async (db: Db, chatId: number) => {
   const chatCollection: Collection<Chat> = db.collection(CHAT_COLLECTION);
