@@ -6,6 +6,7 @@ import { COMMAND_LIST } from './commands/list';
 import { POKERNOW_DB } from './mongo/cluster';
 import {
   handleCurrency,
+  handleMe,
   handlePhone,
   handleRegister,
   handleStart,
@@ -44,6 +45,7 @@ async function main() {
     handleRegister(bot, db);
     handleCurrency(bot, db);
     handlePhone(bot, db);
+    handleMe(bot, db);
 
     // TRIGGERS
     onCsvTrigger(bot, db);

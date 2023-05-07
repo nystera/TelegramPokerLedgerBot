@@ -62,6 +62,38 @@ const handleRegister = (bot: Telegraf<Context<Update>>, db: Db) => {
   });
 };
 
+const handleMe = (bot: Telegraf<Context<Update>>, db: Db) => {
+  return bot.command(COMMAND_TRIGGERS.ME, async (ctx) => {
+    const chat = await getChat(db, ctx.chat.id);
+    if (!chat) {
+      ctx.telegram.sendMessage(
+        ctx.from.id,
+        'It looks like this chat group has not been saved in the database. Please type /start to initialize.',
+      );
+      return;
+    }
+    const user = await getUser(db, ctx.from.id, ctx.chat.id);
+    if (!user) {
+      ctx.telegram.sendMessage(
+        ctx.from.id,
+        "Look's like you have not been registered in this group chat. Please type /register to register.",
+      );
+      return;
+    }
+    ctx.reply(
+      `
+For @${ctx.from.username} (${getPhoneNumber(user.encrpytedNumber)}),
+Your net winnings from this group chat is: ${user.net}
+${
+  user.gameNames.length > 0
+    ? `You go by the names of: ${user.gameNames.join(', ')}`
+    : 'You have not added any game names yet'
+}
+`,
+    );
+  });
+};
+
 // ON /currency
 const handleCurrency = (bot: Telegraf<Context<Update>>, db: Db) => {
   return bot.command(COMMAND_TRIGGERS.CURRENCY, async (ctx) => {
@@ -117,4 +149,4 @@ const handlePhone = (bot: Telegraf<Context<Update>>, db: Db) => {
   });
 };
 
-export { handleStart, handleRegister, handleCurrency, handlePhone };
+export { handleStart, handleRegister, handleMe, handleCurrency, handlePhone };
