@@ -47,10 +47,15 @@
   resolved "https://registry.yarnpkg.com/@tsconfig/node16/-/node16-1.0.3.tgz#472eaab5f15c1ffdd7f8628bd4c4f753995ec79e"
   integrity sha512-yOlFc+7UtL/89t2ZhjPvvB/DeAr3r+Dq58IgzsFkOAvVC6NMJXmCGjbptdXdR9qsX7pKcTL+s87FtYREi2dEEQ==
 
-"@types/node@*", "@types/node@^18.16.3":
-  version "18.16.3"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.16.3.tgz#6bda7819aae6ea0b386ebc5b24bdf602f1b42b01"
-  integrity sha512-OPs5WnnT1xkCBiuQrZA4+YAV4HEJejmHneyraIaxsbev5yCEr6KMwINNFP9wQeFIw8FWcoTqF3vQsa5CDaI+8Q==
+"@types/node@*":
+  version "20.1.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.1.0.tgz#258805edc37c327cf706e64c6957f241ca4c4c20"
+  integrity sha512-O+z53uwx64xY7D6roOi4+jApDGFg0qn6WHcxe5QeqjMaTezBO/mxdfFXIVAVVyNWKx84OmPB3L8kbVYOTeN34A==
+
+"@types/node@^18.16.3":
+  version "18.16.5"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.16.5.tgz#bf64e42719dc2e74da24709a2e1c0b50a966120a"
+  integrity sha512-seOA34WMo9KB+UA78qaJoCO20RJzZGVXQ5Sh6FWu0g/hfT44nKXnej3/tCQl7FL97idFpBhisLYCTB50S0EirA==
 
 "@types/webidl-conversions@*":
   version "7.0.0"
@@ -303,9 +308,9 @@ mongodb-connection-string-url@^2.6.0:
     whatwg-url "^11.0.0"
 
 mongodb@^5.3.0:
-  version "5.3.0"
-  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-5.3.0.tgz#9bef3ff35511a66fb7d9aafb7b06112787138db1"
-  integrity sha512-Wy/sbahguL8c3TXQWXmuBabiLD+iVmz+tOgQf+FwkCjhUIorqbAxRbbz00g4ZoN4sXIPwpAlTANMaGRjGGTikQ==
+  version "5.4.0"
+  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-5.4.0.tgz#ce217194b49572f32af5ddd9a1e3ae1282954795"
+  integrity sha512-6GDKgO7WiYUw+ILap143VXfAou06hjxDGgYUZWGnI4hgoZfP3el0G3l69JqJF8SEQbZmC+SN/2a0aWI/aWJoxA==
   dependencies:
     bson "^5.2.0"
     mongodb-connection-string-url "^2.6.0"
