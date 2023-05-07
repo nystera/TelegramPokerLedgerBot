@@ -1,6 +1,14 @@
-interface Chat {
+type Chat = {
   chatId: number;
   isCents: boolean;
-}
+};
 
-export { Chat };
+type User = {
+  userId: number;
+  chatId: number;
+  encrpytedNumber?: string;
+  net: number;
+  gameNames: string[];
+};
+
+export { Chat, User };

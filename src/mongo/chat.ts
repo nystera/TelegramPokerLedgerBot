@@ -1,4 +1,4 @@
-import { Collection, Db, Document, MongoClient } from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import { Chat } from '../types';
 import { CHAT_COLLECTION } from '../constants/mongo';
 

@@ -1,28 +1,7 @@
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import dayjs from 'dayjs';
-import { Markup } from 'telegraf';
-
-const ledgerInlineKeyboard = (senderId: number, isSettled?: boolean) => {
-  const settledButtonText = isSettled ? 'Undo Settled' : 'Mark as Settled';
-  const settledCallback = isSettled
-    ? `unsettle:${senderId}`
-    : `settle:${senderId}`;
-  return Markup.inlineKeyboard([
-    Markup.button.callback(settledButtonText, settledCallback),
-    Markup.button.callback('Delete', `delete:${senderId}`), // Add a delete button
-  ]).reply_markup;
-};
-
-const centsOptionKeyboard = (chatId: number) => {
-  return Markup.inlineKeyboard([
-    Markup.button.callback(
-      'Use dollar value',
-      `initializeCents:${chatId}:false`,
-    ),
-    Markup.button.callback('Use cents value', `initializeCents:${chatId}:true`),
-  ]).reply_markup;
-};
+const crypto = require('crypto');
 
 const getLedgerFromCsv = async (fileLink: string, isCents?: boolean) => {
   try {
@@ -88,9 +67,40 @@ const constructLedgerText = (
   return ledgerText;
 };
 
+// We encrypt the phone number before storing it in the database
+// const ALGO = process.env.PHONE_NUMBER_ALGORITHM;
+// const KEY = Buffer.from(process.env.PHONE_NUMBER_KEY, 'hex');
+// const IV = process.env.PHONE_NUMBER_IV;
+
+function encryptPhoneNumber(text: string) {
+  const keyBuffer = Buffer.from(process.env.PHONE_NUMBER_KEY, 'hex');
+  const ivBuffer = Buffer.from(process.env.PHONE_NUMBER_IV, 'hex');
+  const cipher = crypto.createCipheriv(
+    process.env.PHONE_NUMBER_ALGORITHM,
+    keyBuffer,
+    ivBuffer,
+  );
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return encrypted.toString('hex');
+}
+
+function getPhoneNumber(encryptedText: string) {
+  const keyBuffer = Buffer.from(process.env.PHONE_NUMBER_KEY, 'hex');
+  const ivBuffer = Buffer.from(process.env.PHONE_NUMBER_IV, 'hex');
+  const decipher = crypto.createDecipheriv(
+    process.env.PHONE_NUMBER_ALGORITHM,
+    keyBuffer,
+    ivBuffer,
+  );
+  let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
 export {
-  ledgerInlineKeyboard,
-  centsOptionKeyboard,
   getLedgerFromCsv,
   constructLedgerText,
+  encryptPhoneNumber,
+  getPhoneNumber,
 };

@@ -2,9 +2,9 @@ import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
 import {
   getLedgerFromCsv,
-  ledgerInlineKeyboard,
-  centsOptionKeyboard,
   constructLedgerText,
+  getPhoneNumber,
+  encryptPhoneNumber,
 } from './utils';
 import dotenv from 'dotenv';
 import process from 'process';
@@ -12,8 +12,17 @@ import CALLBACK from './constants/callback';
 import { Message } from 'telegraf/typings/core/types/typegram';
 import { MongoClient } from 'mongodb';
 import { getChat, initializeChat, updateCentsValue } from './mongo/chat';
-import commands from './constants/commands';
+import commands, { COMMAND_TRIGGERS } from './constants/commands';
 import { POKERNOW_DB } from './constants/mongo';
+import { createUser, getUser, updatePhone } from './mongo/user';
+import {
+  centsOptionKeyboard,
+  confirmPhoneNumberKeyboard,
+  confirmRegisterKeyboard,
+  ledgerInlineKeyboard,
+} from './keyboard';
+
+import crypto from 'crypto';
 
 dotenv.config();
 const port = parseInt(process.env.PORT) || 3000;
@@ -53,8 +62,35 @@ async function main() {
       }
     });
 
+    // ON /register
+    bot.command(COMMAND_TRIGGERS.REGISTER, async (ctx) => {
+      const chat = await getChat(db, ctx.chat.id);
+      if (!chat) {
+        ctx.telegram.sendMessage(
+          ctx.from.id,
+          'It looks like this chat group has not been saved in the database. Please type /start to initialize.',
+        );
+        return;
+      }
+      const user = await getUser(db, ctx.from.id, ctx.chat.id);
+      if (user) {
+        ctx.telegram.sendMessage(
+          ctx.from.id,
+          "Look's like you have already been registered in this group chat.",
+        );
+        return;
+      }
+      ctx.telegram.sendMessage(
+        ctx.from.id,
+        'Please confirm that you are willing to let us store your credentials with us. We will only take your telegram user id. For security reaons, your phone number is not stored yet and you have to do it in a later step.',
+        {
+          reply_markup: confirmRegisterKeyboard(),
+        },
+      );
+    });
+
     // ON /currency
-    bot.command(commands[1].command, async (ctx) => {
+    bot.command(COMMAND_TRIGGERS.CURRENCY, async (ctx) => {
       const chat = await getChat(db, ctx.chat.id);
       if (chat) {
         ctx.reply(
@@ -65,6 +101,44 @@ async function main() {
         );
       } else {
         ctx.reply('No chat saved. Please type /start to initialize.');
+      }
+    });
+
+    bot.command(COMMAND_TRIGGERS.PHONE, async (ctx) => {
+      const userId = ctx.from.id;
+      const chatId = ctx.chat.id;
+      const user = await getUser(db, userId, chatId);
+      const phoneNumber = ctx.message.text.replace('/phone', '').trim();
+      if (!user) {
+        ctx.reply('No found user saved in this group. Please /register first.');
+        return;
+      }
+      // If user types with phone number
+      if (phoneNumber) {
+        ctx.telegram.sendMessage(
+          userId,
+          `Confirm that you want to store this phone number? (${phoneNumber})\nNote that your number will be stored encrpyted in our database.`,
+          {
+            reply_markup: confirmPhoneNumberKeyboard(phoneNumber),
+          },
+        );
+        return;
+      }
+      // We need to check if user is checking for their current number or if they are trying to add a new number
+      // Has an existing number saved
+      if (user.encrpytedNumber) {
+        ctx.telegram.sendMessage(
+          userId,
+          `Your current phone number is ${getPhoneNumber(
+            user.encrpytedNumber,
+          )}. If you want to change it, please send me your phone number in the format of /phone XXXXXXXX`,
+        );
+      } else {
+        // Does not have an existing number saved
+        ctx.telegram.sendMessage(
+          userId,
+          'To store your phone number, please send me your phone number in the format of /phone XXXXXXXX',
+        );
       }
     });
 
@@ -83,8 +157,7 @@ async function main() {
         const ledger = await getLedgerFromCsv(fileLink.href, chat?.isCents);
         if (ledger) {
           try {
-            const sentMessage = await bot.telegram.sendMessage(
-              ctx.chat.id,
+            const sentMessage = await ctx.reply(
               constructLedgerText(ledger, chat?.isCents),
               {
                 reply_markup: ledgerInlineKeyboard(ctx.from.id),
@@ -95,14 +168,10 @@ async function main() {
             });
           } catch (e) {
             console.error(e);
-            bot.telegram.sendMessage(
-              ctx.chat.id,
-              'There was an error processing the CSV file.',
-            );
+            ctx.reply('There was an error processing the CSV file.');
           }
         } else {
-          bot.telegram.sendMessage(
-            ctx.chat.id,
+          ctx.reply(
             'CSV file could not be processed. If you are not planning to use the ledger feature, you can ignore this message.',
           );
         }
@@ -217,6 +286,75 @@ async function main() {
         console.error(e);
         ctx.reply('There was an error initializing the chat. Please try again');
       }
+    });
+
+    // WHEN CONFIRM REGISTER BUTTON IS CLICKED
+    bot.action(CALLBACK.CONFIRM_REGISTER, async (ctx) => {
+      const chatId = ctx.chat.id;
+      const userId = ctx.from.id;
+      const messageId = ctx.callbackQuery.message.message_id;
+      try {
+        // We check if the user is already registered
+        const user = await getUser(db, chatId, userId);
+        if (!user) {
+          await createUser(db, {
+            chatId,
+            userId,
+            net: 0,
+            gameNames: [],
+          });
+          ctx.telegram.sendMessage(
+            userId,
+            'You have been successfully registered! If you want to add your phone number, please follow the steps for /phone. Note that your phone number will be encrpyted when storing it in the database.',
+          );
+        } else {
+          ctx.telegram.sendMessage(userId, 'You are already registered!');
+        }
+        ctx.deleteMessage(messageId);
+      } catch (e) {
+        console.error(e);
+        ctx.telegram.sendMessage(
+          userId,
+          'There was an error registering you. Please try again',
+        );
+      }
+    });
+
+    // WHEN CONFIRM PHONE BUTTON IS CLICKED
+    bot.action(CALLBACK.CONFIRM_PHONE, async (ctx) => {
+      const chatId = ctx.chat.id;
+      const userId = ctx.from.id;
+      const messageId = ctx.callbackQuery.message.message_id;
+      try {
+        // We check if the user is already registered
+        const user = await getUser(db, chatId, userId);
+        if (user) {
+          const phone = ctx.match[1];
+          await updatePhone(db, chatId, userId, phone);
+          ctx.telegram.sendMessage(
+            userId,
+            'You have successfully added your phone number!',
+          );
+        } else {
+          ctx.telegram.sendMessage(
+            userId,
+            'You are not registered! Please register first.',
+          );
+        }
+        ctx.deleteMessage(messageId);
+      } catch (e) {
+        console.error(e);
+        ctx.telegram.sendMessage(
+          userId,
+          'There was an error adding your phone number. Please try again',
+        );
+      }
+    });
+
+    // WHEN ANY CANCEL BUTTON IS CLICKED
+    bot.action(CALLBACK.CANCEL, async (ctx) => {
+      const messageId = ctx.callbackQuery.message.message_id;
+      ctx.deleteMessage(messageId);
     });
 
     // Launch bot
