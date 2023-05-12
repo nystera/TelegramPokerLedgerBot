@@ -215,6 +215,12 @@ const handleRemoveGameName = (bot: Telegraf<Context<Update>>, db: Db) => {
   });
 };
 
+const handleVersionCheck = (bot: Telegraf<Context<Update>>) => {
+  return bot.command(COMMAND_TRIGGERS.VERSION, (ctx) => {
+    ctx.reply(`Version: ${process.env.npm_package_version}`);
+  });
+};
+
 export {
   handleStart,
   handleRegister,
@@ -223,4 +229,5 @@ export {
   handlePhone,
   handleAddGameName,
   handleRemoveGameName,
+  handleVersionCheck,
 };

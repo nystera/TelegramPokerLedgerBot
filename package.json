@@ -1,6 +1,6 @@
 {
   "name": "telegram-poker-ledger-bot",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
   "repository": "git@github.com:nystera/TelegramPokerLedgerBot.git",
   "author": "Nathan Yeo <yeo.nathan@outlook.com>",

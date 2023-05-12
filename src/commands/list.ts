@@ -6,6 +6,7 @@ export const COMMAND_TRIGGERS = {
   PHONE: 'phone',
   ADD_GAMENAME: 'addname',
   REMOVE_GAMENAME: 'removename',
+  VERSION: 'version',
 };
 
 export const COMMAND_LIST = [
@@ -34,5 +35,9 @@ export const COMMAND_LIST = [
   {
     command: COMMAND_TRIGGERS.REMOVE_GAMENAME,
     description: "Remove a game name that you don't play with anymore",
+  },
+  {
+    command: COMMAND_TRIGGERS.VERSION,
+    description: 'Get the current version of the bot',
   },
 ];

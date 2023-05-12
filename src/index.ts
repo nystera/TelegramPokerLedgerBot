@@ -12,6 +12,7 @@ import {
   handleRegister,
   handleRemoveGameName,
   handleStart,
+  handleVersionCheck,
 } from './commands';
 import { onCsvTrigger } from './triggers';
 import {
@@ -50,6 +51,8 @@ async function main() {
     handleMe(bot, db);
     handleAddGameName(bot, db);
     handleRemoveGameName(bot, db);
+    // This is to check if the deployed version is the latest
+    handleVersionCheck(bot);
 
     // TRIGGERS
     onCsvTrigger(bot, db);
