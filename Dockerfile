@@ -14,7 +14,8 @@ ENV NODE_ENV=production
 ARG YARN_VERSION=1.22.19
 RUN command -v yarn >/dev/null 2>&1 || npm install -g yarn@$YARN_VERSION; \
     if yarn --version | grep -qvi "^$YARN_VERSION"; then npm install -g yarn@$YARN_VERSION; fi
-
+# Logs that yarn install is successful here
+RUN echo "Yarn version: $(yarn --version)"
 
 # Throw-away build stage to reduce size of final image
 FROM base as build
@@ -33,6 +34,11 @@ COPY --link . .
 # Remove development dependencies
 RUN yarn install --production=true
 
+# Builds the application
+RUN yarn run build
+
+#  Check if the build by echoing if /dist exists
+RUN echo "Build complete: $(ls -l /app/dist)"
 
 # Final stage for app image
 FROM base
