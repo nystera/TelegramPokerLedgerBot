@@ -15,7 +15,10 @@ export default {
   CONFIRM_PHONE_GETTER: /^confirmPhone:(\d+)$/,
   CONFIRM_PHONE_SETTER: (phone: string) => `confirmPhone:${phone}`,
 
-  CONFIRM_REGISTER: 'confirmRegister',
+  CONFIRM_REGISTER_GETTER: /^confirmRegister:(\d+)$/,
+  CONFIRM_REGISTER_SETTER: (userId: number) => `confirmRegister:${userId}`,
 
-  CANCEL: 'cancel',
+  // CANCEL: 'cancel',
+  CANCEL_GETTER: /^cancel:(\d+)$/,
+  CANCEL_SETTER: (userId: number) => `cancel:${userId}`,
 };
