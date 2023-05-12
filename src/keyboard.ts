@@ -1,7 +1,8 @@
 import { Markup } from 'telegraf';
 import factory from './callbacks/factory';
 
-const cancelButton = Markup.button.callback('Cancel', factory.CANCEL);
+const cancelButton = (userId: number) =>
+  Markup.button.callback('Cancel', factory.CANCEL_SETTER(userId));
 
 const ledgerInlineKeyboard = (senderId: number, isSettled?: boolean) => {
   const settledButtonText = isSettled ? 'Undo Settled' : 'Mark as Settled';
@@ -27,17 +28,19 @@ const centsOptionKeyboard = (chatId: number) => {
   ]).reply_markup;
 };
 
-const confirmRegisterKeyboard = () => {
+const confirmRegisterKeyboard = (userId: number) => {
   return Markup.inlineKeyboard([
-    Markup.button.callback('Confirm', factory.CONFIRM_REGISTER),
-    cancelButton,
+    Markup.button.callback('Confirm', factory.CONFIRM_REGISTER_SETTER(userId)),
+    cancelButton(userId),
   ]).reply_markup;
 };
 
+// TODO: add userId then use it to cancel the command
 const confirmPhoneNumberKeyboard = (phone: string) => {
   return Markup.inlineKeyboard([
     Markup.button.callback('Confirm', factory.CONFIRM_PHONE_SETTER(phone)),
-    cancelButton,
+    // add userId here
+    cancelButton(123),
   ]).reply_markup;
 };
 

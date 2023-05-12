@@ -38,25 +38,22 @@ const handleRegister = (bot: Telegraf<Context<Update>>, db: Db) => {
   return bot.command(COMMAND_TRIGGERS.REGISTER, async (ctx) => {
     const chat = await getChat(db, ctx.chat.id);
     if (!chat) {
-      ctx.telegram.sendMessage(
-        ctx.from.id,
+      ctx.reply(
         'It looks like this chat group has not been saved in the database. Please type /start to initialize.',
       );
       return;
     }
     const user = await getUser(db, ctx.from.id, ctx.chat.id);
     if (user) {
-      ctx.telegram.sendMessage(
-        ctx.from.id,
-        "Look's like you have already been registered in this group chat.",
+      ctx.reply(
+        `Look's like @${ctx.from.username} have already been registered in this group chat.`,
       );
       return;
     }
-    ctx.telegram.sendMessage(
-      ctx.from.id,
-      'Please confirm that you are willing to let us store your credentials with us. We will only take your telegram user id. For security reaons, your phone number is not stored yet and you have to do it in a later step.',
+    ctx.reply(
+      `@${ctx.from.username}, please confirm that you are willing to let us store your credentials with us. We will only take your telegram user id. For security reaons, your phone number is not stored yet and you have to do it in a later step.`,
       {
-        reply_markup: confirmRegisterKeyboard(),
+        reply_markup: confirmRegisterKeyboard(ctx.from.id),
       },
     );
   });

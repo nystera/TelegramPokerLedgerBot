@@ -124,10 +124,14 @@ const callbackSetCurrency = (bot: Telegraf<Context<Update>>, db: Db) => {
 
 // WHEN CONFIRM REGISTER BUTTON IS CLICKED
 const callbackRegisterConfirm = (bot: Telegraf<Context<Update>>, db: Db) => {
-  return bot.action(factory.CONFIRM_REGISTER, async (ctx) => {
+  return bot.action(factory.CONFIRM_REGISTER_GETTER, async (ctx) => {
+    const userId = parseInt(ctx.match[1]);
     const chatId = ctx.chat.id;
-    const userId = ctx.from.id;
     const messageId = ctx.callbackQuery.message.message_id;
+    if (userId !== ctx.from.id) {
+      ctx.answerCbQuery('You cannot confirm for another user');
+      return;
+    }
     try {
       // We check if the user is already registered
       const user = await getUser(db, chatId, userId);
@@ -138,20 +142,16 @@ const callbackRegisterConfirm = (bot: Telegraf<Context<Update>>, db: Db) => {
           net: 0,
           gameNames: [],
         });
-        ctx.telegram.sendMessage(
-          userId,
-          'You have been successfully registered! To start, you can do the following:\n- Add game names with the /addname command (this is to cumulate your winnings).\n- Add your phone number with the /phone command. Note that your phone number will be encrpyted when storing it in the database. (This is to direct people to pay)',
+        ctx.reply(
+          `@${ctx.from.username} has been successfully registered! To start, you can do the following:\n- Add game names with the /addname command (this is to cumulate your winnings).\n- Add your phone number with the /phone command. Note that your phone number will be encrpyted when storing it in the database. (This is to direct people to pay)`,
         );
       } else {
-        ctx.telegram.sendMessage(userId, 'You are already registered!');
+        ctx.reply(`@${ctx.from.username} has already been registered!`);
       }
       ctx.deleteMessage(messageId);
     } catch (e) {
       console.error(e);
-      ctx.telegram.sendMessage(
-        userId,
-        'There was an error registering you. Please try again',
-      );
+      ctx.reply('There was an error registering you. Please try again');
     }
   });
 };
@@ -191,7 +191,12 @@ const callbackConfirmPhone = (bot: Telegraf<Context<Update>>, db: Db) => {
 
 // WHEN ANY CANCEL BUTTON IS CLICKED
 const callbackCancel = (bot: Telegraf<Context<Update>>, db: Db) => {
-  bot.action(factory.CANCEL, async (ctx) => {
+  bot.action(factory.CANCEL_GETTER, async (ctx) => {
+    const userId = parseInt(ctx.match[1]);
+    if (userId !== ctx.from.id) {
+      ctx.answerCbQuery('You cannot cancel for another user');
+      return;
+    }
     const messageId = ctx.callbackQuery.message.message_id;
     ctx.deleteMessage(messageId);
   });
