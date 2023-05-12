@@ -28,17 +28,16 @@ RUN apt-get update -qq && \
 COPY --link package.json yarn.lock .
 RUN yarn install --production=false
 
+# Builds the application
+RUN yarn run build
+#  Check if the build by echoing if /dist exists
+RUN echo "Build complete: $(ls -l /app/dist)"
+
 # Copy application code
 COPY --link . .
 
 # Remove development dependencies
 RUN yarn install --production=true
-
-# Builds the application
-RUN yarn run build
-
-#  Check if the build by echoing if /dist exists
-RUN echo "Build complete: $(ls -l /app/dist)"
 
 # Final stage for app image
 FROM base
