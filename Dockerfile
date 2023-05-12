@@ -25,25 +25,27 @@ RUN apt-get update -qq && \
     apt-get install -y python-is-python3 pkg-config build-essential 
 
 # Install node modules
-COPY --link package.json yarn.lock .
+COPY package.json yarn.lock ./
 RUN yarn install --production=false
+
+# Copy application code
+COPY . .
 
 # Builds the application
 RUN yarn run build
 #  Check if the build by echoing if /dist exists
 RUN echo "Build complete: $(ls -l /app/dist)"
 
-# Copy application code
-COPY --link . .
-
 # Remove development dependencies
 RUN yarn install --production=true
 
 # Final stage for app image
-FROM base
+FROM base as final
 
-# Copy built application
-COPY --from=build /app /app
+# Copy built application and node_modules (with production dependencies only)
+COPY --from=build /app/dist /app/dist
+COPY --from=build /app/node_modules /app/node_modules
+COPY package.json yarn.lock ./
 
 # Start the server by default, this can be overwritten at runtime
 CMD [ "yarn", "run", "start" ]
