@@ -26,7 +26,7 @@ RUN apt-get update -qq && \
 
 # Install node modules
 COPY package.json yarn.lock ./
-RUN yarn install --production=false
+RUN yarn install --production=false --frozen-lockfile
 
 # Copy application code
 COPY . .
@@ -37,7 +37,7 @@ RUN yarn run build
 RUN echo "Build complete: $(ls -l /app/dist)"
 
 # Remove development dependencies
-RUN yarn install --production=true
+RUN yarn install --production=true --frozen-lockfile
 
 # Final stage for app image
 FROM base as final
