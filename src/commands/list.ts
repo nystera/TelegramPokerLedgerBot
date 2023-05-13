@@ -6,14 +6,13 @@ export const COMMAND_TRIGGERS = {
   PHONE: 'phone',
   ADD_GAMENAME: 'addname',
   REMOVE_GAMENAME: 'removename',
-  VERSION: 'version',
 };
 
 export const COMMAND_LIST = [
   { command: COMMAND_TRIGGERS.START, description: 'Start the bot' },
   {
     command: COMMAND_TRIGGERS.ME,
-    description: 'Get your current information, including net profits',
+    description: 'Get your current poker information',
   },
   {
     command: COMMAND_TRIGGERS.REGISTER,
@@ -21,7 +20,7 @@ export const COMMAND_LIST = [
   },
   {
     command: COMMAND_TRIGGERS.CURRENCY,
-    description: 'Change the currency future ledgers will be in',
+    description: "Change group's future ledgers' currency",
   },
   {
     command: COMMAND_TRIGGERS.PHONE,
@@ -35,9 +34,5 @@ export const COMMAND_LIST = [
   {
     command: COMMAND_TRIGGERS.REMOVE_GAMENAME,
     description: "Remove a game name that you don't play with anymore",
-  },
-  {
-    command: COMMAND_TRIGGERS.VERSION,
-    description: 'Get the current version of the bot',
   },
 ];

@@ -134,7 +134,7 @@ const callbackRegisterConfirm = (bot: Telegraf<Context<Update>>, db: Db) => {
     }
     try {
       // We check if the user is already registered
-      const user = await getUser(db, chatId, userId);
+      const user = await getUser(db, userId, chatId);
       if (!user) {
         await createUser(db, {
           chatId,
@@ -159,30 +159,31 @@ const callbackRegisterConfirm = (bot: Telegraf<Context<Update>>, db: Db) => {
 // WHEN CONFIRM PHONE BUTTON IS CLICKED
 const callbackConfirmPhone = (bot: Telegraf<Context<Update>>, db: Db) => {
   return bot.action(factory.CONFIRM_PHONE_GETTER, async (ctx) => {
+    const userId = parseInt(ctx.match[2]);
+    if (userId !== ctx.from.id) {
+      ctx.answerCbQuery('You cannot confirm for another user');
+      return;
+    }
     const chatId = ctx.chat.id;
-    const userId = ctx.from.id;
     const messageId = ctx.callbackQuery.message.message_id;
     try {
       // We check if the user is already registered
-      const user = await getUser(db, chatId, userId);
+      const user = await getUser(db, userId, chatId);
       if (user) {
         const phone = ctx.match[1];
-        await updatePhone(db, chatId, userId, phone);
-        ctx.telegram.sendMessage(
-          userId,
-          'You have successfully updated your phone number!',
+        await updatePhone(db, userId, chatId, phone);
+        ctx.reply(
+          `@${ctx.from.username} has successfully updated their phone number!`,
         );
       } else {
-        ctx.telegram.sendMessage(
-          userId,
-          'You are not registered! Please register first.',
+        ctx.reply(
+          `@${ctx.from.username} is not registered yet, please /register first.`,
         );
       }
       ctx.deleteMessage(messageId);
     } catch (e) {
       console.error(e);
-      ctx.telegram.sendMessage(
-        userId,
+      ctx.reply(
         'There was an error adding your phone number. Please try again',
       );
     }

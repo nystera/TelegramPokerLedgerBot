@@ -35,12 +35,14 @@ const confirmRegisterKeyboard = (userId: number) => {
   ]).reply_markup;
 };
 
-// TODO: add userId then use it to cancel the command
-const confirmPhoneNumberKeyboard = (phone: string) => {
+const confirmPhoneNumberKeyboard = (phone: string, userId: number) => {
   return Markup.inlineKeyboard([
-    Markup.button.callback('Confirm', factory.CONFIRM_PHONE_SETTER(phone)),
+    Markup.button.callback(
+      'Confirm',
+      factory.CONFIRM_PHONE_SETTER(phone, userId),
+    ),
     // add userId here
-    cancelButton(123),
+    cancelButton(userId),
   ]).reply_markup;
 };
 
