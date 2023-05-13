@@ -9,7 +9,7 @@ import {
 } from '../keyboard';
 import { COMMAND_TRIGGERS } from './list';
 import { addGameName, getUser, removeGameName } from '../mongo/user';
-import { getPhoneNumber } from '../utils';
+import { getPhoneNumber, isAtBot } from '../utils';
 
 // ON /start
 const handleStart = (bot: Telegraf<Context<Update>>, db: Db) => {
@@ -44,6 +44,7 @@ const handleRegister = (bot: Telegraf<Context<Update>>, db: Db) => {
       return;
     }
     const user = await getUser(db, ctx.from.id, ctx.chat.id);
+
     if (user) {
       ctx.reply(
         `Look's like @${ctx.from.username} have already been registered in this group chat.`,
@@ -63,24 +64,24 @@ const handleMe = (bot: Telegraf<Context<Update>>, db: Db) => {
   return bot.command(COMMAND_TRIGGERS.ME, async (ctx) => {
     const chat = await getChat(db, ctx.chat.id);
     if (!chat) {
-      ctx.telegram.sendMessage(
-        ctx.from.id,
+      ctx.reply(
         'It looks like this chat group has not been saved in the database. Please type /start to initialize.',
       );
       return;
     }
     const user = await getUser(db, ctx.from.id, ctx.chat.id);
     if (!user) {
-      ctx.telegram.sendMessage(
-        ctx.from.id,
-        "Look's like you have not been registered in this group chat. Please type /register to register.",
+      ctx.reply(
+        `Look's like @${ctx.from.username} have not been registered in this group chat. Please type /register to register.`,
       );
       return;
     }
     ctx.reply(
       `
 For @${ctx.from.username}${
-        user.encrpytedNumber ? ` (${getPhoneNumber(user.encrpytedNumber)})` : ''
+        user.encrpytedNumber
+          ? ` (\`${getPhoneNumber(user.encrpytedNumber)}\`)`
+          : ''
       },
 Your net winnings from this group chat is: ${user.net}
 ${
@@ -89,6 +90,9 @@ ${
     : 'You have not added any game names yet'
 }
 `,
+      {
+        parse_mode: 'Markdown',
+      },
     );
   });
 };
@@ -121,12 +125,12 @@ const handlePhone = (bot: Telegraf<Context<Update>>, db: Db) => {
       return;
     }
     // If user types with phone number
-    if (phoneNumber) {
-      ctx.telegram.sendMessage(
-        userId,
-        `Confirm that you want to store this phone number? (${phoneNumber})\nNote that your number will be stored encrpyted in our database.`,
+    if (!isNaN(parseInt(phoneNumber))) {
+      ctx.reply(
+        `Confirm that you want to store this phone number \`${phoneNumber}\`. Note that your number will be stored encrpyted in our database`,
         {
-          reply_markup: confirmPhoneNumberKeyboard(phoneNumber),
+          reply_markup: confirmPhoneNumberKeyboard(phoneNumber, userId),
+          parse_mode: 'Markdown',
         },
       );
       return;
@@ -134,16 +138,17 @@ const handlePhone = (bot: Telegraf<Context<Update>>, db: Db) => {
     // We need to check if user is checking for their current number or if they are trying to add a new number
     // Has an existing number saved
     if (user.encrpytedNumber) {
-      ctx.telegram.sendMessage(
-        userId,
-        `Your current phone number is ${getPhoneNumber(
+      ctx.reply(
+        `@${ctx.from.username}, your current phone number is \`${getPhoneNumber(
           user.encrpytedNumber,
-        )}. If you want to change it, please send me your phone number in the format of /phone XXXXXXXX`,
+        )}\`. If you want to change it, please send me your phone number in the format of /phone XXXXXXXX`,
+        {
+          parse_mode: 'Markdown',
+        },
       );
     } else {
       // Does not have an existing number saved
-      ctx.telegram.sendMessage(
-        userId,
+      ctx.reply(
         'To store your phone number, please send me your phone number in the format of /phone XXXXXXXX',
       );
     }
@@ -163,19 +168,17 @@ const handleAddGameName = (bot: Telegraf<Context<Update>>, db: Db) => {
       return;
     }
     // If user does not type with game name, we prompt them to add a game name
-    if (!gameName) {
-      ctx.telegram.sendMessage(
-        userId,
+    if (!gameName || isAtBot(gameName)) {
+      ctx.reply(
         'To add a game name, please send me your game name in the format of /addname XYZ',
       );
       return;
     }
     // If user types with game name
     await addGameName(db, userId, chatId, gameName);
-    ctx.telegram.sendMessage(
-      userId,
-      `Your game name ${gameName} has been added.`,
-    );
+    ctx.reply(`Your game name *${gameName}* has been added.`, {
+      parse_mode: 'Markdown',
+    });
   });
 };
 
@@ -192,9 +195,8 @@ const handleRemoveGameName = (bot: Telegraf<Context<Update>>, db: Db) => {
       return;
     }
     // If user does not type with game name, we prompt them to add a game name
-    if (!gameName) {
-      ctx.telegram.sendMessage(
-        userId,
+    if (!gameName || isAtBot(gameName)) {
+      ctx.reply(
         'To remove a game name, please send me your game name in the format of /removename XYZ',
       );
       return;
@@ -202,21 +204,20 @@ const handleRemoveGameName = (bot: Telegraf<Context<Update>>, db: Db) => {
     // If user types with game name
     const hasNameRemoved = await removeGameName(db, userId, chatId, gameName);
     if (hasNameRemoved) {
-      ctx.telegram.sendMessage(
-        userId,
-        `Your game name ${gameName} has been removed.`,
-      );
+      ctx.reply(`Your game name *${gameName}* has been removed.`, {
+        parse_mode: 'Markdown',
+      });
     } else {
-      ctx.telegram.sendMessage(
-        userId,
-        `You have not been registered as ${gameName}.`,
-      );
+      ctx.reply(`You have not been registered as *${gameName}*`, {
+        parse_mode: 'Markdown',
+      });
     }
   });
 };
 
+// THIS IS FOR TESTING PURPOSES ONLY
 const handleVersionCheck = (bot: Telegraf<Context<Update>>) => {
-  return bot.command(COMMAND_TRIGGERS.VERSION, (ctx) => {
+  return bot.command('version', (ctx) => {
     ctx.reply(`Version: ${process.env.npm_package_version}`);
   });
 };

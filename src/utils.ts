@@ -93,9 +93,16 @@ function getPhoneNumber(encryptedText: string) {
   return decrypted;
 }
 
+// For all commands, if it is an empty command it will look like /start@<bot_name> and we want to differentiate it
+// from a command that has text in it
+const isAtBot = (text: string) => {
+  return new RegExp(/^@.*bot/i).test(text);
+};
+
 export {
   getLedgerFromCsv,
   constructLedgerText,
   encryptPhoneNumber,
   getPhoneNumber,
+  isAtBot,
 };
