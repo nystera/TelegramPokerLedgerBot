@@ -101,4 +101,43 @@ const removeGameName = async (
   }
 };
 
-export { getUser, createUser, updatePhone, addGameName, removeGameName };
+const updateNet = async (
+  db: Db,
+  userId: number,
+  chatId: number,
+  sessionValue: number,
+) => {
+  const userCollection: Collection<User> = db.collection(USER_COLLECTION);
+  try {
+    await userCollection.updateOne(
+      {
+        userId,
+        chatId,
+      },
+      {
+        $inc: {
+          net: sessionValue,
+        },
+      },
+    );
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
+
+const getAllUsersInChat = async (db: Db, chatId: number) => {
+  const userCollection: Collection<User> = db.collection(USER_COLLECTION);
+  return await userCollection.find({ chatId }).toArray();
+};
+
+export {
+  getUser,
+  createUser,
+  updatePhone,
+  addGameName,
+  removeGameName,
+  updateNet,
+  getAllUsersInChat,
+};

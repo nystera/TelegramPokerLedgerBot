@@ -3,8 +3,13 @@ import { Context, Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
 import { Update } from 'telegraf/typings/core/types/typegram';
 import { getChat } from '../mongo/chat';
-import { constructLedgerText, getLedgerFromCsv } from '../utils';
+import {
+  constructLedgerText,
+  getLedgerFromCsv,
+  getSortedLedgerFromMap,
+} from '../utils';
 import { ledgerInlineKeyboard } from '../keyboard';
+import { storeLedgerSession } from '../mongo/ledger';
 
 const onCsvTrigger = (bot: Telegraf<Context<Update>>, db: Db) => {
   return bot.on(message('document'), async (ctx) => {
@@ -22,12 +27,28 @@ const onCsvTrigger = (bot: Telegraf<Context<Update>>, db: Db) => {
       const ledger = await getLedgerFromCsv(fileLink.href, chat?.isCents);
       if (ledger) {
         try {
+          const sortedLedger = getSortedLedgerFromMap(ledger);
+          // We check if ledger is successfully inserted in the database
           const sentMessage = await ctx.reply(
-            constructLedgerText(ledger, chat?.isCents),
+            constructLedgerText(sortedLedger),
             {
               reply_markup: ledgerInlineKeyboard(ctx.from.id),
             },
           );
+          const isInserted = await storeLedgerSession(
+            db,
+            sentMessage.message_id,
+            ctx.chat.id,
+            sortedLedger,
+          );
+          if (!isInserted) {
+            ctx.telegram.editMessageText(
+              sentMessage.chat.id,
+              sentMessage.message_id,
+              null,
+              `${sentMessage.text}\n(This ledger could not be saved in the database)`,
+            );
+          }
           bot.telegram.pinChatMessage(ctx.chat.id, sentMessage.message_id, {
             disable_notification: true,
           });

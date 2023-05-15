@@ -2,6 +2,7 @@ import csv from 'csv-parser';
 import { Readable } from 'stream';
 import dayjs from 'dayjs';
 import crypto from 'crypto';
+import { PlayerLedger, User } from './types';
 
 const getLedgerFromCsv = async (fileLink: string, isCents?: boolean) => {
   try {
@@ -16,20 +17,28 @@ const getLedgerFromCsv = async (fileLink: string, isCents?: boolean) => {
       stream
         .pipe(csv())
         .on('data', (row) => {
-          const { player_nickname, net } = row;
-          // We divide the net by 100 as we use cents value
-          const netInt = parseInt(net) / (isCents ? 100 : 1);
+          const {
+            player_nickname,
+            net,
+          }: {
+            player_nickname: string;
+            net: string;
+          } = row;
+          // We multiply the net by 100 as we use dollar value
+          const netInt = parseInt(net) * (isCents ? 1 : 100);
+          // We want to store the player nickname in lowercase
           if (netInt !== 0) {
+            const playerLowercase = player_nickname.toLowerCase();
             // if the player is already in the map
             // we add the net to the existing value
-            if (resultMap.has(player_nickname)) {
-              const existingNet = resultMap.get(player_nickname);
-              resultMap.set(player_nickname, existingNet + netInt);
+            if (resultMap.has(playerLowercase)) {
+              const existingNet = resultMap.get(playerLowercase);
+              resultMap.set(playerLowercase, existingNet + netInt);
             }
             // if the player is not in the map
             // we add the player to the map
             else {
-              resultMap.set(player_nickname, netInt);
+              resultMap.set(playerLowercase, netInt);
             }
           }
         })
@@ -45,23 +54,31 @@ const getLedgerFromCsv = async (fileLink: string, isCents?: boolean) => {
   }
 };
 
-const constructLedgerText = (
-  resultMap: Map<string, number>,
-  isCents?: boolean,
-) => {
-  const sortedArray = [];
+const getSortedLedgerFromMap = (resultMap: Map<string, number>) => {
+  const sortedArray: PlayerLedger[] = [];
   for (const [key, value] of resultMap) {
     sortedArray.push({
-      player_nickname: key,
-      net: isCents ? value.toFixed(2) : value,
+      gameName: key,
+      net: value,
     });
   }
   sortedArray.sort((a, b) => b.net - a.net);
+  return sortedArray;
+};
+
+const constructLedgerText = (sortedLedger: PlayerLedger[]) => {
   let ledgerText = `Today's Ledger: ${dayjs().format(
     'DD MMM YYYY',
-  )} (Transfer to: ${sortedArray[0].player_nickname})\n`;
-  sortedArray.forEach(({ player_nickname, net }) => {
-    ledgerText += `${player_nickname}: ${net}\n`;
+  )} (Transfer to: ${sortedLedger[0].gameName})\n`;
+  sortedLedger.forEach(({ gameName, net }) => {
+    let result: string;
+    if (Math.abs(net).toString().length < 3) {
+      result = (net < 0 ? '-' : '') + '0.' + ('0' + net.toString()).slice(-2);
+    } else {
+      const strValue = net.toString();
+      result = strValue.slice(0, -2) + '.' + strValue.slice(-2);
+    }
+    ledgerText += `${gameName}: ${result}\n`;
   });
   return ledgerText;
 };
@@ -99,10 +116,22 @@ const isAtBot = (text: string) => {
   return new RegExp(/^@.*bot/i).test(text);
 };
 
+const getGameNameToUserId = (users: User[]) => {
+  const gameNameToUserId = new Map<string, number>();
+  users.forEach((user) => {
+    user.gameNames.forEach((gameName) => {
+      gameNameToUserId.set(gameName, user.userId);
+    });
+  });
+  return gameNameToUserId;
+};
+
 export {
   getLedgerFromCsv,
+  getSortedLedgerFromMap,
   constructLedgerText,
   encryptPhoneNumber,
   getPhoneNumber,
   isAtBot,
+  getGameNameToUserId,
 };

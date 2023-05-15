@@ -5,3 +5,5 @@ export const POKERNOW_DB =
 export const CHAT_COLLECTION = 'chat';
 
 export const USER_COLLECTION = 'user';
+
+export const LEDGER_COLLECTION = 'ledger';

@@ -4,16 +4,44 @@ import { Message, Update } from 'telegraf/typings/core/types/typegram';
 import factory from './factory';
 import { ledgerInlineKeyboard } from '../keyboard';
 import { getChat, initializeChat, updateCentsValue } from '../mongo/chat';
-import { createUser, getUser, updatePhone } from '../mongo/user';
+import {
+  createUser,
+  getAllUsersInChat,
+  getUser,
+  updateNet,
+  updatePhone,
+} from '../mongo/user';
+import { getLedger } from '../mongo/ledger';
+import { getGameNameToUserId } from '../utils';
 
 // WHEN SETTLED BUTTON IS CLICKED
 const callbackSettle = (bot: Telegraf<Context<Update>>, db: Db) => {
-  return bot.action(factory.SETTLE_LEDGER_GETTER, (ctx) => {
+  return bot.action(factory.SETTLE_LEDGER_GETTER, async (ctx) => {
     const senderId = parseInt(ctx.match[1]);
     const userId = ctx.from.id;
     // We know the settled callback is only sent from the ledger message
     const message = ctx.callbackQuery.message as Message.TextMessage;
     if (senderId === userId) {
+      const { ledger } = await getLedger(
+        db,
+        message.message_id,
+        message.chat.id,
+      );
+      // We need to get all users in the chat first, and create a map of gameName to userId
+      const allUsersInChat = await getAllUsersInChat(db, message.chat.id);
+      const gameNameToUserId = getGameNameToUserId(allUsersInChat);
+      // We update every user's balance in the database
+      // TODO: We can try to implement transaction in the future
+      for (const playerLedger of ledger) {
+        if (gameNameToUserId.has(playerLedger.gameName)) {
+          updateNet(
+            db,
+            gameNameToUserId.get(playerLedger.gameName),
+            message.chat.id,
+            playerLedger.net,
+          );
+        }
+      }
       const originalText = message.text;
       // Edit the message to include "Ledger Settled" and strike through the old text
       ctx.telegram.editMessageText(
@@ -39,13 +67,34 @@ const callbackSettle = (bot: Telegraf<Context<Update>>, db: Db) => {
 
 // WHEN UNSETTLED BUTTON IS CLICKED
 const callbackUnsettle = (bot: Telegraf<Context<Update>>, db: Db) => {
-  return bot.action(factory.UNSETTLE_LEDGER_GETTER, (ctx) => {
+  return bot.action(factory.UNSETTLE_LEDGER_GETTER, async (ctx) => {
     const senderId = parseInt(ctx.match[1]);
     const userId = ctx.from.id;
     // We know the unsettled callback is only sent from the ledger message
     const message = ctx.callbackQuery.message as Message.TextMessage;
     if (senderId === userId) {
       const originalText = message.text;
+      const { ledger } = await getLedger(
+        db,
+        message.message_id,
+        message.chat.id,
+      );
+      // We need to get all users in the chat first, and create a map of gameName to userId
+      const allUsersInChat = await getAllUsersInChat(db, message.chat.id);
+      const gameNameToUserId = getGameNameToUserId(allUsersInChat);
+      // We update every user's balance in the database to revert the changes
+      // TODO: We can try to implement transaction in the future
+      for (const playerLedger of ledger) {
+        if (gameNameToUserId.has(playerLedger.gameName)) {
+          updateNet(
+            db,
+            gameNameToUserId.get(playerLedger.gameName),
+            message.chat.id,
+            -playerLedger.net,
+          );
+        }
+      }
+
       // Edit the message to remove "Ledger Settled"
       ctx.telegram.editMessageText(
         message.chat.id,

@@ -11,4 +11,15 @@ type User = {
   gameNames: string[];
 };
 
-export { Chat, User };
+type PlayerLedger = {
+  gameName: string;
+  net: number;
+};
+
+type Ledger = {
+  messageId: number;
+  chatId: number;
+  ledger: PlayerLedger[];
+};
+
+export { Chat, User, PlayerLedger, Ledger };
